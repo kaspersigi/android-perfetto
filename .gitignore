@@ -1,0 +1,22 @@
+# Editor / OS files
+*.swp
+*.swo
+.idea/
+.DS_Store
+Thumbs.db
+*~
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Downloaded sources and build artifacts
+/sources/
+/build/
+/dist/
+/out/
+/.cache/
+
+# Agent caches
+.codex/
+.agents/

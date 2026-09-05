@@ -1,0 +1,25 @@
+# Standalone Android ARM64 Release, independent of AOSP.
+target_os = "android"
+target_cpu = "arm64"
+is_debug = false
+
+# Android API 32 (Android 12L) or newer devices.
+android_api_level = 32
+
+# Keep all upstream tracebox services and their communication paths available.
+enable_perfetto_platform_services = true
+enable_perfetto_ipc = true
+enable_perfetto_traced_probes = true
+enable_perfetto_traced_relay = true
+
+# Include the linux.perf producer in tracebox.
+enable_perfetto_traced_perf = true
+
+# Enable the upstream heap-profiling build targets. Upstream tracebox does
+# NOT bundle the heapprofd daemon; this flag alone does not add that applet.
+enable_perfetto_heapprofd = true
+
+# Preserve both compression formats and the upstream regex backend.
+enable_perfetto_zlib = true
+enable_perfetto_zstd = true
+enable_perfetto_re2 = true

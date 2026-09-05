@@ -1,0 +1,86 @@
+name: Release Android tracebox
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build and validate release tracebox
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install host build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            python3 make git curl ca-certificates tar xz-utils unzip binutils
+
+      - name: Test build scripts
+        run: make test
+
+      - name: Build Release with four parallel jobs
+        run: |
+          # Perfetto installs the toolchain pinned by the selected source tag.
+          # Do not substitute the runner's preinstalled NDK or GN/Ninja.
+          make release JOBS=4
+          make verify
+
+      - name: Store verified build outputs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tracebox-release
+          path: |
+            dist/tracebox
+            dist/build-info.json
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    name: Publish tracebox to GitHub Release
+    needs: build
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tracebox-release
+          path: dist
+
+      - name: Verify downloaded release binary
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends binutils
+          # Artifact transport does not preserve executable permissions.
+          chmod 0755 dist/tracebox
+          make verify
+
+      - name: Upload tracebox and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: bash scripts/publish-release.sh
