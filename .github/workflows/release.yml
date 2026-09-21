@@ -61,6 +61,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -84,3 +85,40 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: bash scripts/publish-release.sh
+
+      # The Release is the durable copy; keep the one-day artifact expiry as
+      # a fallback if publishing or cleanup fails. Rebuild to rerun after cleanup.
+      - name: Verify published assets and remove temporary artifacts
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_ASSETS: |
+            tracebox
+        run: |
+          set -euo pipefail
+          trap 'echo "::warning::Artifact cleanup incomplete; remaining artifacts retain their one-day expiry."' ERR
+          release_json="$RUNNER_TEMP/published-release-cleanup.json"
+          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > "$release_json"
+          jq -e --arg tag "$RELEASE_TAG" \
+            '.tag_name == $tag and .draft == false and .published_at != null' "$release_json" > /dev/null
+          while IFS= read -r asset; do
+            [[ -n "$asset" ]] || continue
+            local_digest=$(sha256sum "dist/$asset")
+            remote_digest=$(jq -er --arg name "$asset" \
+              '.assets[] | select(.name == $name and .state == "uploaded") | .digest' "$release_json")
+            if [[ "$remote_digest" != "sha256:${local_digest%% *}" ]]; then
+              echo "::warning::Published asset digest mismatch: $asset; retaining workflow artifacts."
+              exit 1
+            fi
+          done <<< "$RELEASE_ASSETS"
+          # List completely before deletion so pagination cannot skip entries.
+          artifact_ids=$(gh api --paginate "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false and (.name == "tracebox-release")) | .id')
+          while IFS= read -r artifact_id; do
+            [[ -n "$artifact_id" ]] || continue
+            [[ "$artifact_id" =~ ^[0-9]+$ ]]
+            gh api --method DELETE "repos/$GH_REPO/actions/artifacts/$artifact_id"
+          done <<< "$artifact_ids"
