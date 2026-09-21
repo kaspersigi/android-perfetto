@@ -1,0 +1,18 @@
+android-perfetto
+Copyright 2026 android-perfetto contributors
+
+The repository-owned build scripts, configuration, tests, and documentation
+are licensed under the Apache License, Version 2.0, except where an individual
+file states a different license. See LICENSE for the full terms.
+
+This project builds tracebox from upstream Perfetto sources:
+https://github.com/google/perfetto
+The upstream release is selected in sources.lock. Perfetto is developed by
+the Android Open Source Project and other contributors. Its LICENSE describes
+the Apache-2.0 terms and any file-specific exceptions for that release.
+
+Downloaded upstream sources and third-party dependencies retain their own
+copyright, license, and attribution notices. The generated tracebox binary
+incorporates upstream code and remains subject to the applicable component
+licenses. This repository's LICENSE and NOTICE do not replace those notices
+or relicense upstream components.

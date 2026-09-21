@@ -127,3 +127,17 @@ After downloading the executable to a device, run `chmod 0755 tracebox`.
 See the documentation for collection methods, permissions, and feature limits.
 A successful CI build does not establish that perf sampling or heap analysis
 has been validated on a physical device.
+
+## License
+
+Unless an individual file states otherwise, repository-owned build scripts,
+configuration, tests, and documentation are licensed under the Apache License
+2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Upstream Perfetto and downloaded third-party dependencies retain their own
+licenses and attribution notices. For the default version in
+[sources.lock](sources.lock), see the [Perfetto v58.2 license](https://github.com/google/perfetto/blob/v58.2/LICENSE),
+including its file-specific exceptions. When changing the upstream version,
+consult the license files for that release and its dependencies. The generated
+`tracebox` incorporates upstream code; the repository's top-level license does
+not replace the applicable component licenses or notices.
